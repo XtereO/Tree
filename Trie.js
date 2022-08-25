@@ -1,111 +1,85 @@
-class Node{
-    constructor(value,behavior=0){
-        this.value=value
-        this.behavior=behavior
-        this.childs=[]
-    }
+class Node {
+  constructor(value, behavior = 0) {
+    this.value = value;
+    this.behavior = behavior;
+    this.childs = [];
+  }
 }
-class Trie{
-    constructor(){
-        this.root=new Node("")
+class Trie {
+  constructor() {
+    this.root = new Node("");
+  }
+  addNode(curNode, value, behavior = 0) {
+    if (!curNode.childs.some((c) => c.value === value)) {
+      curNode.childs.push(new Node(value, behavior));
     }
-    
-    AddNode(curNode,value,behavior=0){
-        if(curNode.childs.length===0){
-            curNode.childs.push(new Node(value,behavior))
-            return "AddSuccessfull"
-        }
-        
-        //CheckOnCopy
-        let check=1
-        for(let key in curNode.childs){
-            if(curNode.childs[key].value===value){
-                check=0
-            }
-        }
-        
-        //CheckSuccessfull
-        if(check===1){
-            curNode.childs.push(new Node(value,behavior))
-        }
+  }
+  addWord(curNode, word) {
+    if (word.length === 1) {
+      this.addNode(curNode, word, 1);
+      return "Add Successfull";
     }
-    AddWord(curNode,word){
-    
-        if (word.length===1){
-            this.AddNode(curNode,word,1)
-            return "Add Successfull"
-        }
-        
-        this.AddNode(curNode,word[0])
-        
-        for (let key in curNode.childs){
-            if(curNode.childs[key].value===word[0]){
-                this.AddWord(curNode.childs[key],word.slice(1))
-            }
-        }
+    this.addNode(curNode, word[0]);
+    curNode.childs.forEach(
+      (c) => c.value === word[0] && this.addWord(c, word.slice(1))
+    );
+  }
+  removeWord(curNode, word) {
+    if (word.length === 0) {
+      curNode.behavior = 0;
+      return "Remove Successfull";
     }
-    RemoveWord(curNode,word){
-      if (word.length===0){
-            console.log(curNode)
-            curNode.behavior=0
-            return "Remove Successfull"
+    curNode.childs.forEach(
+      (c) => c.value === word[0] && this.removeWord(c, word.slice(1))
+    );
+  }
+
+  search(curNode, word) {
+    const childs = curNode.childs.filter((c) => c.value === word[0]);
+    if (childs.length > 0) {
+      for (const key in childs) {
+        if (childs[key].value === word[0]) {
+          if (childs[key].behavior === 1) {
+            return true;
+          } else {
+            return this.search(childs[key], word.slice(1));
+          }
         }
-        
-        for (let key in curNode.childs){
-            if(curNode.childs[key].value===word[0]){
-                this.RemoveWord(curNode.childs[key],word.slice(1))
-            }
-        }  
+      }
     }
-    
-    Search(curNode,word){
-        for(let key in curNode.childs){
-            if(curNode.childs[key].value===word[0]){
-                if(curNode.childs[key].behavior===1){
-                    return true
-                }
-                else{
-                    return (this.Search(curNode.childs[key],word.slice(1)))
-                }
-            }
-        }
-        return false
+    return false;
+  }
+
+  support(curNode, word) {
+    if (curNode.behavior == 1) {
+      return word;
     }
-    
-    Support(curNode,word){
-        if (curNode.behavior==1){
-            console.log("Did you mean: "+word)
-            return word
-        }
-        for(let key in curNode.childs){
-            let neWord=word+curNode.childs[key].value
-            return this.Support(curNode.childs[key],neWord)
-        }
-        return false
+    for (const key in curNode.childs) {
+      const newWord = word + curNode.childs[key].value;
+      return this.support(curNode.childs[key], newWord);
     }
-    Mean(curNode,word,orig=word){
-        if ((word.length===1) && (curNode.behavior===1)){
-            console.log("Did you Mean:"+orig)
-            return true
-        }
-        if (word.length===0){
-            return this.Support(curNode,orig)
-        }
-        
-        for(let key in curNode.childs){
-            if(word[0]===curNode.childs[key].value){
-                return this.Mean(curNode.childs[key],word.slice(1),orig)
-            }
-        }
-        return false
+    return false;
+  }
+  mean(curNode, word, orig = word) {
+    if (word.length === 1 && curNode.behavior === 1) {
+      return orig;
     }
+    if (word.length === 0) {
+      return this.support(curNode, orig);
+    }
+    for (let key in curNode.childs) {
+      if (curNode.childs[key].value === word[0]) {
+        return this.mean(curNode.childs[key], word.slice(1), orig);
+      }
+    }
+    return false;
+  }
 }
 
-trie=new Trie()
-
-trie.AddWord(trie.root,"hello")
-trie.AddWord(trie.root,"help")
-trie.AddWord(trie.root,"javascript")
-trie.AddWord(trie.root,"jax")
-trie.RemoveWord(trie.root,"jax")
-console.log(trie.Mean(trie.root,"jax"))
+trie = new Trie();
+trie.addWord(trie.root, "hello");
+trie.addWord(trie.root, "help");
+trie.addWord(trie.root, "javascript");
+trie.addWord(trie.root, "jax");
+trie.removeWord(trie.root, "jax");
+console.log(trie.mean(trie.root, "java"), trie.search(trie.root, "javascript"));
